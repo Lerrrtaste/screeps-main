@@ -9,6 +9,60 @@
 // that needs to be loaded and saved in the memory
 // and then used to spawn the creep
 
+const ADJECTIVES = [
+  "Adventurous",
+  "Amused",
+  "Bashful",
+  "Bold",
+  "Brave",
+  "Calm",
+  "Charming",
+  "Cheerful",
+  "Clever",
+  "Confident",
+  "Cool",
+  "Crazy",
+  "Curious",
+  "Daring",
+  "Delightful",
+  "Determined",
+  "Eager",
+  "Energetic",
+  "Excited",
+  "Friendly",
+  "Funny",
+  "Gentle",
+  "Giggly",
+  "Grateful",
+  "Happy",
+  "Heartfelt",
+  "Hilarious",
+  "Inquisitive",
+  "Jolly",
+  "Joyful",
+  "Kooky",
+  "Lively",
+  "Lucky",
+  "Mischievous",
+  "Optimistic",
+  "Passionate",
+  "Playful",
+  "Positive",
+  "Quirky",
+  "Radiant",
+  "Refreshing",
+  "Relaxed",
+  "Sassy",
+  "Smiling",
+  "Soothing",
+  "Spontaneous",
+  "Spirited",
+  "Thrilled",
+  "Upbeat",
+  "Witty",
+  "Zesty"
+];
+
 class CreepClass {
     name: string;
     version: number;
@@ -50,8 +104,12 @@ class CreepClass {
     spawn(spawn: StructureSpawn) {
         // Spawn a creep from a creep class
 
+        if (spawn.spawning !== null || spawn.room.energyAvailable < this.getBodyCost()) {
+            return ;
+        }
 
-        let result = spawn.spawnCreep(this.body, this.name + "_" + this.version,
+        let adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+        let result = spawn.spawnCreep(this.body, adjective + " " + this.name + " (v" + this.version + ")",
             {
                 memory: {
                     role: this.role,
@@ -62,7 +120,7 @@ class CreepClass {
         if (result === OK) {
             console.log("Spawning " + this.name + "_" + this.version);
         } else {
-            console.log("Failed to spawn " + this.name + "_" + this.version + " " + result);
+            console.log("Failed to spawn " + adjective+ '_'+ this.name + "_" + this.version + " with error " + result);
         }
     }
 
