@@ -99,6 +99,7 @@ export class StarterRole extends BaseRole {
                             console.log("Starter: " + creep.name + " found harvest slot " + pos);
                             creep.say("back2work");
                             this.memory.harvestSlots[sourceId][pos] = creep.id;
+                            return;
                         }
                     }
                 }
