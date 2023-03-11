@@ -25,21 +25,18 @@ export class StarterRole extends BaseRole {
         super("starter");
     }
 
-    // harvestingPositions: RoomPosition[] = [];
-    // activeSources: Source[] = [];
-
-    memory: StarterRoleMemory = { creepIds: [], activeSourcesIds: [], harvestSlots: {} };
-
+    memory: StarterRoleMemory = Memory.roles['starter'] as StarterRoleMemory || {
+        activeSourcesIds: [],
+        harvestSlots: {},
+    };
 
     // Init new Creeps
     public override initCreep(creep: Creep, creepMemory: StarterCreepMemory) {
-        console.log("Starter: initCreep" + creep.name);
         creepMemory.state = States.IDLE;
     }
 
     // Prepare Run
     public override preRun(room: Room) {
-
         // collect harvesting positions //TODO cache
         const sources = room.find(FIND_SOURCES_ACTIVE);
         const terrain = room.getTerrain();
@@ -62,12 +59,20 @@ export class StarterRole extends BaseRole {
                 }
             }
         }
+
+        // free slots for dead creeps
+        for (const sourceId in this.memory.harvestSlots) {
+            for (const pos in this.memory.harvestSlots[sourceId]) {
+                if (this.memory.harvestSlots[sourceId][pos] != "" && !Game.getObjectById(this.memory.harvestSlots[sourceId][pos])) {
+                    this.memory.harvestSlots[sourceId][pos] = "";
+                }
+            }
+        }
     }
 
-    public override runCreep(creep: Creep) {
-        const creepMemory = creep.memory as StarterCreepMemory;
+    public override runCreep(creep: Creep, creepMemory: StarterCreepMemory) {
+        // const creepMemory = creep.memory as StarterCreepMemory;
 
-        console.log("Starter: " + creep.name + " is " + creepMemory.state);
         this.updateCreepState(creep, creepMemory);
 
         switch (creepMemory.state) {
@@ -156,6 +161,7 @@ export class StarterRole extends BaseRole {
     }
 
     public override postRun(creeps: Creep[]) {
+        // nothing to do
     }
 }
 

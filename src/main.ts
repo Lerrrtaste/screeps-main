@@ -55,6 +55,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
 
   //TODO distributor and harvest roles, store in containers next to sources for pickup
   // calculate the number of creeps per role
+  // memorry plumbing every x ticks (cleanup dead creeps, add new creeps, etc)
 
   // TODO ROles
   // - All in one starter (basically this)
@@ -72,9 +73,9 @@ export const loop = ErrorMapper.wrapLoop(() => {
   // starterClass.spawn(Game.spawns["Spawn1"]);
 
   let starterRole = new StarterRole();
-  starterRole.runRole(Game.rooms["sim"]);
+  starterRole.runRole(Game.rooms["E6N39"]);
 
-  const targetPop = 12;
+  const targetPop = 8;
   const currentPop = _.size(Game.creeps);
   if (currentPop < targetPop) {
     starterClass.spawn(Game.spawns["Spawn1"]);

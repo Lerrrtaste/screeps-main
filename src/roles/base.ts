@@ -8,7 +8,6 @@
 // like builder, harvester, etc
 
 interface BaseRoleMemory {
-    creepIds: string[];
 }
 
 interface BaseCreepMemory extends CreepMemory {
@@ -19,9 +18,7 @@ interface BaseCreepMemory extends CreepMemory {
 class BaseRole {
     // array of possible states (only basic, role specific states are implemented in the children)
     name: string = 'base';
-    memory: BaseRoleMemory = {
-        creepIds: []
-    }
+    memory: BaseRoleMemory = {};
 
     constructor(name: string) {
         this.name = name;
@@ -47,32 +44,30 @@ class BaseRole {
         creep.room.visual.line(creep.pos, pos, { color: 'red' });
     }
 
-    // get all creeps with this role, and call childrens functions
     runRole(room: Room) {
-        this.loadRoleMemory();
+        const creeps = this.getCreeps();
 
         this.preRun(room);
 
-        for (let creep of this.getCreeps()) {
+        for (let creep of creeps) {
             let creepMemory = <BaseCreepMemory>creep.memory;
             if (!creepMemory.state) {
                 this.initCreep(creep, creepMemory);
             } else {
-                this.runCreep(creep);
+                this.runCreep(creep, creepMemory);
             }
         }
 
-        this.postRun(this.getCreeps());
-
-        this.saveRoleMemory();
+        this.postRun(creeps);
     }
 
     // to be overridden by children
     public initCreep(creep: Creep, creepMemory: BaseCreepMemory) {
-        console.log('Init creep not implemented for role ' + this.name);
+        creep.say('Im bored :(');
+        // console.log('Init creep not implemented for role ' + this.name);
     };
 
-    public runCreep(creep: Creep) {
+    public runCreep(creep: Creep, creepMemory: BaseCreepMemory) {
         console.log('Run creep not implemented for role ' + this.name);
     };
 
@@ -84,9 +79,8 @@ class BaseRole {
         console.log('Post run not implemented for role ' + this.name);
     };
 
-    // load role memory from global memory
-    loadRoleMemory() {
-        // console.log('Loading memory for role ' + this.name);
+    // update or initialize role memory
+    updateRoleMemory() {
         if (!Memory.roles) {
             Memory.roles = {};
             console.log('Created memory for roles');
