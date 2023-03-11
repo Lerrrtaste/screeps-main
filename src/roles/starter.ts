@@ -44,7 +44,6 @@ export class StarterRole extends BaseRole {
             if (this.memory.activeSourcesIds.indexOf(source.id) != -1) {
                 continue; // already added
             }
-            console.log("Starter: found new source " + source.id);
             this.memory.activeSourcesIds.push(source.id);
             this.memory.harvestSlots[source.id] = {};
 
@@ -101,8 +100,8 @@ export class StarterRole extends BaseRole {
                             creepMemory.targetPos = new RoomPosition(parseInt(pos.split(",")[0]), parseInt(pos.split(",")[1]), creep.room.name);
                             creepMemory.targetSourceId = sourceId;
                             creepMemory.state = States.HARVESTING;
-                            console.log("Starter: " + creep.name + " found harvest slot " + pos);
                             creep.say("back2work");
+                            console.log("Starter: " + creep.name + " is harvesting at " + creepMemory.targetPos);
                             this.memory.harvestSlots[sourceId][pos] = creep.id;
                             return;
                         }
@@ -112,6 +111,12 @@ export class StarterRole extends BaseRole {
 
             case States.HARVESTING:
                 if (creep.store.getFreeCapacity() == 0) {
+                    if (Game.spawns["Spawn1"].store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+                        creepMemory.state = States.SUPPLY_SPAWN;
+                    } else {
+                        creepMemory.state = States.SUPPLY_CONTROLLER;
+                    }
+
                     creepMemory.state = States.SUPPLY_SPAWN;
                     this.memory.harvestSlots[creepMemory.targetSourceId][creepMemory.targetPos.x + "," + creepMemory.targetPos.y] = "";
                     creep.say("I'm FULL");
@@ -119,7 +124,21 @@ export class StarterRole extends BaseRole {
                 break;
 
             case States.SUPPLY_SPAWN:
+                if (Game.spawns["Spawn1"].store.getFreeCapacity(RESOURCE_ENERGY) == 0) {
+                    creepMemory.state = States.SUPPLY_CONTROLLER;
+                    creep.say("too slow...");
+                }
+                if (creep.store.getUsedCapacity() == 0) {
+                    creepMemory.state = States.IDLE;
+                    creep.say("All done");
+                }
+                break;
+
             case States.SUPPLY_CONTROLLER:
+                if (Game.spawns["Spawn1"].store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+                    creepMemory.state = States.SUPPLY_SPAWN;
+                    creep.say("back again");
+                }
                 if (creep.store.getUsedCapacity() == 0) {
                     creepMemory.state = States.IDLE;
                     creep.say("All done");

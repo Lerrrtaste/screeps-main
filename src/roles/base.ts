@@ -91,18 +91,7 @@ class BaseRole {
         }
 
         this.memory = Memory.roles[this.name];
-        // update memory of all creeps with this role
-        this.memory.creepIds = this.getCreeps().map((creep) => creep.id);
-        // console.log('Updated memory for role ' + this.name);
-
-        // console.log('Loaded memory: ' + JSON.stringify(this.memory));
-    }
-
-    // save role memory to global memory
-    saveRoleMemory() {
-        // console.log('Saving memory for role ' + this.name);
-        Memory.roles[this.name] = this.memory;
-        // console.log('Saved memory: ' + JSON.stringify(this.memory));
+        console.log('Updated memory for role ' + this.name);
     }
 }
 
