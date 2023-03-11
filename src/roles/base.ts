@@ -40,8 +40,8 @@ class BaseRole {
     // go to position
     goTo(creep: Creep, pos: RoomPosition) {
         const to = new RoomPosition(pos.x, pos.y, pos.roomName);
-        creep.moveTo(to);
-        creep.room.visual.line(creep.pos, pos, { color: 'red' });
+        creep.moveTo(to, { visualizePathStyle: { stroke: '#ffffff' } });
+        // creep.room.visual.line(creep.pos, to, { color: 'grey', lineStyle: 'dashed' });
     }
 
     runRole(room: Room) {
@@ -59,6 +59,7 @@ class BaseRole {
         }
 
         this.postRun(creeps);
+        this.saveRoleMemory();
     }
 
     // to be overridden by children
@@ -92,6 +93,10 @@ class BaseRole {
 
         this.memory = Memory.roles[this.name];
         console.log('Updated memory for role ' + this.name);
+    }
+
+    saveRoleMemory() {
+        Memory.roles[this.name] = this.memory;
     }
 }
 
