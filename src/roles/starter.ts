@@ -117,16 +117,12 @@ export class StarterRole extends BaseRole {
                             creepMemory.targetSourceId = sourceId;
                             creepMemory.state = States.HARVESTING;
                             creep.say("back2work");
-                            console.log("Starter: " + creep.name + " is harvesting at " + creepMemory.targetPos);
+                            // console.log("Starter: " + creep.name + " is harvesting at " + creepMemory.targetPos);
                             this.memory.harvestSlots[sourceId][pos] = creep.id;
                             return;
                         }
                     }
                 }
-                creep.say("no slot...");
-                let idlePos = Game.spawns['Spawn1'].pos;
-                idlePos.y += 2;
-                this.goTo(creep, idlePos);
                 break;
 
             case States.HARVESTING:
@@ -136,42 +132,14 @@ export class StarterRole extends BaseRole {
                         this.memory.harvestSlots[creepMemory.targetSourceId][creepMemory.targetPos.x + "," + creepMemory.targetPos.y] = "";
                     }
                     creep.say("I'm FULL");
-
-                    // 1. supply spawn
-                    if (Game.spawns["Spawn1"].store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-                        creepMemory.state = States.SUPPLY_SPAWN;
-                        creepMemory.supplyTargetId = "";
-                        return;
-                    }
-
-                    // 2. supply extensions
-                    const extensions = creep.room.find(FIND_MY_STRUCTURES, {
-                        filter: (s) => s.structureType == STRUCTURE_EXTENSION
-                            && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-                    });
-                    if (extensions.length > 0) {
-                        creepMemory.state = States.SUPPLY_EXTENSION;
-                        creepMemory.supplyTargetId = extensions[0].id;
-                        return;
-                    }
-
-                    // 3. supply construction sites
-                    const constructionSites = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
-                    if (constructionSites.length > 0) {
-                        creepMemory.state = States.SUPPLY_CONSTRUCTION;
-                        creepMemory.supplyTargetId = constructionSites[0].id;
-                        return;
-                    }
-
-                    // 4. supply controller
-                    creepMemory.state = States.SUPPLY_CONTROLLER;
-                    creepMemory.supplyTargetId = "";
+                    this.setSupplyState(creep, creepMemory);
                 }
                 break;
 
             case States.SUPPLY_SPAWN:
+                // switch to controller if spawn full
                 if (Game.spawns["Spawn1"].store.getFreeCapacity(RESOURCE_ENERGY) == 0) {
-                    creepMemory.state = States.SUPPLY_CONTROLLER;
+                    this.setSupplyState(creep, creepMemory);
                     creep.say("storno");
                 }
                 if (creep.store.getUsedCapacity() == 0) {
@@ -180,9 +148,10 @@ export class StarterRole extends BaseRole {
                 }
                 break;
 
+            // switch to spawn if not full
             case States.SUPPLY_CONTROLLER:
                 if (Game.spawns["Spawn1"].store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-                    creepMemory.state = States.SUPPLY_SPAWN;
+                    this.setSupplyState(creep, creepMemory);
                     creep.say("storno");
                 }
                 if (creep.store.getUsedCapacity() == 0) {
@@ -192,9 +161,10 @@ export class StarterRole extends BaseRole {
                 break;
 
             case States.SUPPLY_EXTENSION:
+                // check if extenstion full
                 const extension = Game.getObjectById(creepMemory.supplyTargetId) as StructureExtension;
                 if (!extension || extension.store.getFreeCapacity(RESOURCE_ENERGY) == 0) {
-                    creepMemory.state = States.SUPPLY_CONTROLLER;
+                    this.setSupplyState(creep, creepMemory);
                     creep.say("storno");
                 }
                 if (creep.store.getUsedCapacity() == 0) {
@@ -204,22 +174,58 @@ export class StarterRole extends BaseRole {
                 break;
 
             case States.SUPPLY_CONSTRUCTION:
+                // check if construction finished
                 const structure = Game.getObjectById(creepMemory.supplyTargetId) as ConstructionSite;
                 if (!structure || structure.progress == structure.progressTotal) {
-                    creepMemory.state = States.SUPPLY_CONTROLLER;
+                    this.setSupplyState(creep, creepMemory);
                     creep.say("storno");
                 }
-
                 if (creep.store.getUsedCapacity() == 0) {
                     creepMemory.state = States.IDLE;
                     creep.say("All done");
                 }
+                break;
         }
     }
 
+    private setSupplyState(creep: Creep, creepMemory: StarterCreepMemory) {
+
+        // 1. supply spawn
+        if (Game.spawns["Spawn1"].store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+            creepMemory.state = States.SUPPLY_SPAWN;
+            creepMemory.supplyTargetId = "";
+            return;
+        }
+
+        // 2. supply extensions
+        const extensions = creep.room.find(FIND_MY_STRUCTURES, {
+            filter: (s) => s.structureType == STRUCTURE_EXTENSION
+                && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+        });
+        if (extensions.length > 0) {
+            creepMemory.state = States.SUPPLY_EXTENSION;
+            creepMemory.supplyTargetId = extensions[0].id;
+            return;
+        }
+
+        // 3. supply construction sites
+        const constructionSites = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
+        if (constructionSites.length > 0) {
+            creepMemory.state = States.SUPPLY_CONSTRUCTION;
+            creepMemory.supplyTargetId = constructionSites[0].id;
+            return;
+        }
+
+        // 4. supply controller
+        creepMemory.state = States.SUPPLY_CONTROLLER;
+        creepMemory.supplyTargetId = "";
+    }
+
     private runIdle(creep: Creep, creepMemory: StarterCreepMemory) {
-        // Check for available harvest slots
-        // creep.say("am bored");
+        creep.say("no slot...");
+        let idlePos = Game.spawns['Spawn1'].pos;
+        idlePos.y += 2;
+        this.goTo(creep, idlePos);
     }
 
     private runHarvesting(creep: Creep, creepMemory: StarterCreepMemory) {
