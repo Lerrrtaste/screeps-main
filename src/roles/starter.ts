@@ -171,7 +171,7 @@ export class StarterRole extends BaseRole {
 
             case States.SUPPLY_SPAWN:
                 if (Game.spawns["Spawn1"].store.getFreeCapacity(RESOURCE_ENERGY) == 0) {
-                    creepMemory.state = States.IDLE;
+                    creepMemory.state = States.SUPPLY_CONTROLLER;
                     creep.say("storno");
                 }
                 if (creep.store.getUsedCapacity() == 0) {
@@ -182,7 +182,7 @@ export class StarterRole extends BaseRole {
 
             case States.SUPPLY_CONTROLLER:
                 if (Game.spawns["Spawn1"].store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-                    creepMemory.state = States.IDLE;
+                    creepMemory.state = States.SUPPLY_SPAWN;
                     creep.say("storno");
                 }
                 if (creep.store.getUsedCapacity() == 0) {
@@ -194,7 +194,7 @@ export class StarterRole extends BaseRole {
             case States.SUPPLY_EXTENSION:
                 const extension = Game.getObjectById(creepMemory.supplyTargetId) as StructureExtension;
                 if (!extension || extension.store.getFreeCapacity(RESOURCE_ENERGY) == 0) {
-                    creepMemory.state = States.IDLE;
+                    creepMemory.state = States.SUPPLY_CONTROLLER;
                     creep.say("storno");
                 }
                 if (creep.store.getUsedCapacity() == 0) {
@@ -206,7 +206,7 @@ export class StarterRole extends BaseRole {
             case States.SUPPLY_CONSTRUCTION:
                 const structure = Game.getObjectById(creepMemory.supplyTargetId) as ConstructionSite;
                 if (!structure || structure.progress == structure.progressTotal) {
-                    creepMemory.state = States.IDLE;
+                    creepMemory.state = States.SUPPLY_CONTROLLER;
                     creep.say("storno");
                 }
 
