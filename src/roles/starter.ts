@@ -21,12 +21,13 @@ interface StarterCreepMemory extends BaseCreepMemory {
     targetPos: RoomPosition;
     targetSourceId: string;
     supplyTargetId: string;
+    queued: boolean;
 }
 
 interface StarterRoleMemory extends BaseRoleMemory {
     activeSourcesIds: string[],
     // per sourceid: dict with [x,y]: creepId
-    harvestSlots: { [sourceId: string]: { [pos: string]: string } },
+    harvestSlots: { [sourceId: string]: { [pos: string]: { harvesting: string, queue: string[] } } },
 }
 
 export class StarterRole extends BaseRole {
@@ -50,7 +51,7 @@ export class StarterRole extends BaseRole {
         const sources = room.find(FIND_SOURCES_ACTIVE);
         const terrain = room.getTerrain();
         for (const source of sources) {
-            if (this.memory.activeSourcesIds.indexOf(source.id) != -1) {
+            if (this.memory.activeSourcesIds.indexOf(source.id) != -1 && this.memory.harvestSlots[source.id]) {
                 continue; // already added
             }
             this.memory.activeSourcesIds.push(source.id);
@@ -62,7 +63,11 @@ export class StarterRole extends BaseRole {
                         continue;
                     }
                     if (terrain.get(source.pos.x + x, source.pos.y + y) != TERRAIN_MASK_WALL) {
-                        this.memory.harvestSlots[source.id][source.pos.x + x + "," + (source.pos.y + y)] = "";
+                        this.memory.harvestSlots[source.id][source.pos.x + x + "," + (source.pos.y + y)] = {
+                            harvesting: "",
+                            queue: [],
+                        };
+                        console.log("initialized harvest slot @" + source.pos);
                     }
                 }
             }
@@ -71,18 +76,48 @@ export class StarterRole extends BaseRole {
         // free slots for dead creeps
         for (const sourceId in this.memory.harvestSlots) {
             for (const pos in this.memory.harvestSlots[sourceId]) {
-                if (this.memory.harvestSlots[sourceId][pos] != "" && !Game.getObjectById(this.memory.harvestSlots[sourceId][pos])) {
+                if (this.memory.harvestSlots[sourceId][pos].harvesting != "" && !Game.getObjectById(this.memory.harvestSlots[sourceId][pos].harvesting)) {
                     console.log("(dead creep) freeing slot " + pos + " for source " + sourceId);
-                    this.memory.harvestSlots[sourceId][pos] = "";
+                    this.memory.harvestSlots[sourceId][pos].harvesting = "";
                 }
+                this.memory.harvestSlots[sourceId][pos].queue = this.memory.harvestSlots[sourceId][pos].queue.filter((creepId) => Game.getObjectById(creepId));
+            }
+        }
+
+        // print queues
+        console.log("harvest queues:");
+        for (const sourceId in this.memory.harvestSlots) {
+            for (const pos in this.memory.harvestSlots[sourceId]) {
+                let text = "  " + pos + ": ";
+                text += (Game.getObjectById(this.memory.harvestSlots[sourceId][pos].harvesting) as Creep)?.name || "none";
+                if (this.memory.harvestSlots[sourceId][pos].queue.length > 0) {
+                    text += " -> ";
+                }
+                for (const creepId of this.memory.harvestSlots[sourceId][pos].queue) {
+                    text += (Game.getObjectById(creepId) as Creep).name + " ";
+                }
+
+                console.log(text);
             }
         }
     }
 
-    public override runCreep(creep: Creep, creepMemory: StarterCreepMemory) {
-        // const creepMemory = creep.memory as StarterCreepMemory;
+    public reset(creep: Creep, creepMemory: StarterCreepMemory) {
+        creepMemory.state = States.SUPPLY_CONTROLLER;
+        creepMemory.targetPos = new RoomPosition(0, 0, creep.room.name);
+        creepMemory.targetSourceId = "";
+        creepMemory.supplyTargetId = "";
+    }
 
+
+    public override runCreep(creep: Creep, creepMemory: StarterCreepMemory) {
         this.updateCreepState(creep, creepMemory);
+
+        // this.reset(creep, creepMemory);
+        // if (creep.name != "Crazy Dan (v2)") {
+        //     return;
+        // }
+
 
         switch (creepMemory.state) {
             case States.IDLE:
@@ -109,30 +144,69 @@ export class StarterRole extends BaseRole {
     private updateCreepState(creep: Creep, creepMemory: StarterCreepMemory) {
         switch (creepMemory.state) {
             case States.IDLE:
-                const harvestSlots = this.memory.harvestSlots;
-                for (const sourceId of this.memory.activeSourcesIds) {
-                    for (const pos in harvestSlots[sourceId]) {
-                        if (harvestSlots[sourceId][pos] == "") {
-                            creepMemory.targetPos = new RoomPosition(parseInt(pos.split(",")[0]), parseInt(pos.split(",")[1]), creep.room.name);
-                            creepMemory.targetSourceId = sourceId;
-                            creepMemory.state = States.HARVESTING;
-                            creep.say("back2work");
-                            // console.log("Starter: " + creep.name + " is harvesting at " + creepMemory.targetPos);
-                            this.memory.harvestSlots[sourceId][pos] = creep.id;
-                            return;
+                // check if queued resources is available
+                if (creepMemory.queued && creepMemory.targetSourceId &&
+                    this.memory.harvestSlots[creepMemory.targetSourceId][creepMemory.targetPos.x + "," + creepMemory.targetPos.y].harvesting == "") {
+                    console.log("through with the queue");
+                    creepMemory.queued = false;
+                    creep.say("wooork");
+                    creepMemory.state = States.HARVESTING;
+                    _.remove(this.memory.harvestSlots[creepMemory.targetSourceId][creepMemory.targetPos.x + "," + creepMemory.targetPos.y].queue, (creepId) => creepId == creep.id);
+                    return;
+                }
+
+                if (!creepMemory.queued) {
+                    // check if harvesting is available or queue
+                    let sourceIdSmallestQueue = "";
+                    let harvestSlotSmallestQueue = "";
+                    let smallestQueue = 999;
+
+                    for (const sourceId of this.memory.activeSourcesIds) {
+                        for (const pos in this.memory.harvestSlots[sourceId]) {
+                            // check if harvesting is available
+                            if (this.memory.harvestSlots[sourceId][pos].harvesting == "") {
+                                creepMemory.targetPos = new RoomPosition(parseInt(pos.split(",")[0]), parseInt(pos.split(",")[1]), creep.room.name);
+                                creepMemory.targetSourceId = sourceId;
+                                creepMemory.state = States.HARVESTING;
+                                creep.say("back2work");
+                                console.log(creep.name + 'skipping queue');
+                                this.memory.harvestSlots[sourceId][pos].harvesting = creep.id;
+                                return;
+                            }
+
+                            // check if queue is smaller
+                            if (this.memory.harvestSlots[sourceId][pos].queue.length < smallestQueue) {
+                                smallestQueue = this.memory.harvestSlots[sourceId][pos].queue.length;
+                                sourceIdSmallestQueue = sourceId;
+                                harvestSlotSmallestQueue = pos;
+                            }
                         }
                     }
+
+                    if (smallestQueue == 999) {
+                        console.log("no harvest slots available to queue!?");
+                        return;
+                    }
+                    // enter queue
+                    creepMemory.queued = true;
+                    creepMemory.targetPos = new RoomPosition(parseInt(harvestSlotSmallestQueue.split(",")[0]), parseInt(harvestSlotSmallestQueue.split(",")[1]), creep.room.name);
+                    creepMemory.targetSourceId = sourceIdSmallestQueue;
+                    this.memory.harvestSlots[sourceIdSmallestQueue][harvestSlotSmallestQueue].queue.push(creep.id);
+                    console.log(creep.name + " queued to " + harvestSlotSmallestQueue + " at pos " + smallestQueue);
                 }
+
+
                 break;
 
             case States.HARVESTING:
                 if (creep.store.getFreeCapacity() == 0) {
                     // 0. free slot
-                    if (this.memory.harvestSlots[creepMemory.targetSourceId][creepMemory.targetPos.x + "," + creepMemory.targetPos.y] == creep.id) {
-                        this.memory.harvestSlots[creepMemory.targetSourceId][creepMemory.targetPos.x + "," + creepMemory.targetPos.y] = "";
+                    if (this.memory.harvestSlots[creepMemory.targetSourceId][creepMemory.targetPos.x + "," + creepMemory.targetPos.y].harvesting == creep.id) {
+                        this.memory.harvestSlots[creepMemory.targetSourceId][creepMemory.targetPos.x + "," + creepMemory.targetPos.y].harvesting = "";
                     }
                     creep.say("I'm FULL");
                     this.setSupplyState(creep, creepMemory);
+                    creepMemory.targetSourceId = "";
                 }
                 break;
 
@@ -222,10 +296,19 @@ export class StarterRole extends BaseRole {
     }
 
     private runIdle(creep: Creep, creepMemory: StarterCreepMemory) {
-        creep.say("no slot...");
-        let idlePos = Game.spawns['Spawn1'].pos;
-        idlePos.y += 2;
-        this.goTo(creep, idlePos);
+        if (creepMemory.queued) {
+            if (creep.pos.inRangeTo(creepMemory.targetPos, 5)) {
+                this.goTo(creep, Game.spawns["Spawn1"].pos);
+                creep.say("go2spawn");
+            } else if (!creep.pos.inRangeTo(creepMemory.targetPos, 10)) {
+                this.goTo(creep, creepMemory.targetPos);
+                creep.say("go2q");
+            } else {
+                creep.say("q");
+            }
+
+        }
+
     }
 
     private runHarvesting(creep: Creep, creepMemory: StarterCreepMemory) {
@@ -233,6 +316,10 @@ export class StarterRole extends BaseRole {
         if (!creepMemory.targetSourceId || !creepMemory.targetPos) {
             console.error("Starter: " + creep.name + " has invalid target");
             return;
+        }
+
+        if (creepMemory.queued) {
+            console.warn("ehm a queued creep is harvesting?"); //TODO remove
         }
 
         let targetSource = Game.getObjectById(creepMemory.targetSourceId) as Source;
