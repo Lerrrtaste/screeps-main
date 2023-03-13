@@ -66,9 +66,14 @@ export const loop = ErrorMapper.wrapLoop(() => {
   //   body focus: work
   //
   // - Worker (take from nearest container and put in construction sites, repair sites, etc)
+  // All in One (Build, Repair, Upgrade)
   //   body focus: work, move,
   //
-
+  //   Specialzed:
+  //   - Repairman (take from nearest supply container and repair)
+  //   - Upgrader (take from nearest supply container and upgrade)
+  //   - Builder (take from nearest supply container and build)
+  //
   // Distribution and Construction Logic
   // - Supply Containers: x per source,
   //   supplied by harvesters,
@@ -111,7 +116,8 @@ export const loop = ErrorMapper.wrapLoop(() => {
   // - Pop per Role
   // - Creeps (Name, Class, Role, state, (target), lifetime)
   // - Construction Queue and Progress
-  // - Spawn Queue and Progress
+
+// - Spawn Queue and Progress
   // - Terrain
   // - Harvesting slots (claimed/free/status)
   // - calculated movement speed (per class)
