@@ -1,6 +1,7 @@
-import { Effect, ForkEffect, takeEvery } from 'redux-saga/effects';
+import { Effect, ForkEffect, takeEvery, put } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { authActions } from './slice';
+import { apiActions } from '../api/slice';
 
 export function* watchSetToken(
     action: PayloadAction<any>
@@ -9,6 +10,7 @@ export function* watchSetToken(
         console.log("Non string token recieved");
     } else {
         console.log("Sage: setting token: " + action.payload);
+        yield put(apiActions.apiGetMe());
     }
 }
 
