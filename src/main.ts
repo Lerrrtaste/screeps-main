@@ -3,6 +3,7 @@ import * as _ from "lodash";
 import CreepClass from './creepClass';
 import { BaseRoleMemory, BaseRole } from './roles/base';
 import { StarterRole, StarterCreepMemory, StarterRoleMemory } from './roles/starter';
+import { Distributor, DistributionMemory } from './distribution';
 
 declare global {
   /*
@@ -20,8 +21,16 @@ declare global {
 
     creepClasses: { [name: string]: CreepClass };
     roles: { [role: string]: BaseRoleMemory };
+    rooms: { [room: string]: RoomMemory };
   }
 
+  interface RoomMemory {
+  //   creepClasses: { [name: string]: CreepClass };
+  //   roles: { [role: string]: BaseRoleMemory };
+    distribution: DistributionMemory;
+  }
+
+  // Extended by class and roles
   interface CreepMemory {
     creepClass: string;
     version: number;
@@ -46,6 +55,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
 
   // Genreal Todos
   // - memorry plumbing every x ticks (cleanup dead creeps, add new creeps, etc)
+  // - defenses and all that
 
   // Roles
   // - Distributor (take from containers carry to spawn, extensions, storage)
@@ -93,24 +103,44 @@ export const loop = ErrorMapper.wrapLoop(() => {
   // - Set construciton targets
   // - Set Worker Priorities
   // - Set target Storage Levels (per container type)
+  // - Set container types (supply, consume, storage)
   //
   // Ui Data
   // - CreepClasses
-  // - Pop per Class
+  // - Pop per Class (+ spawn new? + suicide too many?)
   // - Pop per Role
   // - Creeps (Name, Class, Role, state, (target), lifetime)
   // - Construction Queue and Progress
   // - Spawn Queue and Progress
   // - Terrain
   // - Harvesting slots (claimed/free/status)
+  // - calculated movement speed (per class)
+  // - remaing total construction energy
   //
   // phase system with room level
 
-  const starterClass = new CreepClass("Dan", 1, [WORK, CARRY, MOVE, WORK], "starter");
-  let starterRole = new StarterRole();
-  starterRole.runRole(Game.rooms["E6N39"]);
+  // Init Room Memory
+  const room = "E6N39";
+  if (!Memory.rooms) {
+    Memory.rooms = {};
+  }
+  if (!Memory.rooms[room]) {
+    Memory.rooms[room] = {} as RoomMemory;
+  }
 
-  const targetPop = 12;
+  // Classes
+  const starterClass = new CreepClass("Dan", 3, [WORK, WORK, CARRY, MOVE, MOVE], "starter");
+
+  // Manager
+  const distributor = new Distributor(Game.rooms[room], false);
+  distributor.run();
+
+  // Roles
+  let starterRole = new StarterRole();
+  starterRole.runRole(Game.rooms[room]);
+
+  // Pop Spawner
+  const targetPop = 24;
   const currentPop = _.size(Game.creeps);
   if (currentPop < targetPop) {
     starterClass.spawn(Game.spawns["Spawn1"]);
