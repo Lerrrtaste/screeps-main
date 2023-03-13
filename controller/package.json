@@ -14,6 +14,7 @@
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
     "axios": "^1.3.4",
+    "browserify-zlib": "^0.2.0",
     "debug": "^4.3.4",
     "events": "^3.3.0",
     "fs": "^0.0.1-security",
@@ -23,6 +24,8 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.9.0",
     "react-scripts": "5.0.1",
+    "react-zlib-js": "^1.0.5",
+    "screeps-api": "^1.16.0",
     "typescript": "^4.9.5",
     "url": "^0.11.0",
     "util": "^0.12.5",
@@ -45,12 +48,13 @@
   },
   "browser": {
     "crypto": false,
-    "fs": false,
     "path": false,
     "os": false,
     "net": false,
+    "ws": "./src/api/ws-browser.js",
     "stream": false,
-    "ws": "./src/ws-browser.js"
+    "fs": false,
+    "util": false
   },
   "browserslist": {
     "production": [

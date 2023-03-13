@@ -1,26 +1,26 @@
-import React from 'react';
-import logo from './logo.svg';
+import * as React from 'react';
+import { Link, Route, Routes } from "react-router-dom";
+
+import Button from '@mui/material/Button';
+import CreepList from './components/creepList';
+
 import './App.css';
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    return (
+        <div>
+            <nav>
+                <Link to="/">Home</Link>
+                <Link to="/creeps">Creep List</Link>
+                <Link to="/classes">Creep Classes</Link>
+            </nav>
+            <Routes>
+                <Route path="/" element={<h1>wip dashboard</h1>} />
+                <Route path="/creeps" element={<CreepList />} />
+                <Route path="/classes" element={<h1>wip classes</h1>} />
+            </Routes>
+        </div>
+    );
 }
 
 export default App;
