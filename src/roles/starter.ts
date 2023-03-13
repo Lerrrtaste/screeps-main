@@ -258,6 +258,8 @@ export class StarterRole extends BaseRole {
                     // 0. free slot
                     if (this.memory.harvestSlots[creepMemory.targetSourceId][creepMemory.targetPos.x + "," + creepMemory.targetPos.y].harvesting == creep.id) {
                         this.memory.harvestSlots[creepMemory.targetSourceId][creepMemory.targetPos.x + "," + creepMemory.targetPos.y].harvesting = "";
+                    } else {
+                        console.log("harvesting creep was not in slot");
                     }
                     creep.say("I'm FULL");
                     this.setSupplyState(creep, creepMemory);
