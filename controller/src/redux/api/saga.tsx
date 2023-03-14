@@ -1,10 +1,9 @@
-import { Effect, ForkEffect, takeEvery, call, put } from 'redux-saga/effects';
+import { call, put, Effect, ForkEffect, takeEvery } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { apiActions } from './slice';
-import { getMe } from '../../api/ScreepsAPI';
-import toast from 'react-hot-toast';
-
-import {AxiosResponse} from 'axios';
+import { IFetchUserResponse, getMe } from '../../api/ScreepsAPI';
+import { AxiosError, AxiosResponse } from 'axios';
+/* import toast from 'react-hot-toast'; */
 
 export function* watchApiSuccess(
     action: PayloadAction<any>
@@ -29,32 +28,14 @@ export function* watchApiError(
 export function* watchApiGetMe(
     action: PayloadAction<any>
 ): Generator<Effect, void> {
-    console.log("getting me");
+    console.log("HI");
+    /* console.log(typeof (yield call(getMe))); */
     try {
-        const response : AxiosResponse<any> = yield call(
-            toast.promise,
-                getMe(),
-                {
-                    loading: 'Loading',
-                    success: `Successfully got you`,
-                    error: 'Something happend'
-                }
-        ) as AxiosResponse<any>;
-        console.log(response);
+        const response: AxiosResponse<IFetchUserResponse> = (yield call(getMe) ) as AxiosResponse<IFetchUserResponse>;
         yield put(apiActions.apiSuccess(response.data));
-    } catch (e) {
-        yield put(apiActions.apiError("sth"));
+    } catch (error) {
+        yield put(apiActions.apiError((error as AxiosError).message));
     }
-
-    /*
-     *     if (typeof response ===
-     *         console.log("response");
-     *         yield put(apiActions.apiSuccess(response.data));
-     *     } catch (e) {
-     *         console.log("error");
-     *         yield put(apiActions.apiError(e);
-     *     } */
-
 }
 
 export function* watchApiSagas(): Generator<ForkEffect, void> {
